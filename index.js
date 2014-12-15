@@ -97,7 +97,59 @@
 			}
 			return false;
 		}
-		return {solve:solve,solveState:solveState};
+
+		function create(level){
+			var puzzle = getEmpty();
+			var state = start();
+			var clues = 0;
+			// Levels 0-4 where 0 is hard and 4 is easy.
+			level = Math.max(0, Math.min(5, level));
+			// Less than 17 clues is really complicated
+			var maxClues = 17 + (5*level);
+			var order = range(0, length);
+			order = shuffleArray(order);
+			var i = 0;
+			var lastSolution;
+			while( i < order.length && clues < maxClues)
+			{
+				var pos = order[i];
+				if(state[pos].length > 1){
+					// Skip range of difficult resolution,
+					// taking the previous solution.
+					if( i >= 13 && i <= 17 )
+					{
+						solution = lastSolution;
+						puzzle[pos] = lastSolution[pos]
+					}
+					else
+					{
+						state[pos] = shuffleArray(state[pos]);
+						var solution = false;
+						var j = 0;
+						while( !solution && j < state[pos].length)
+						{
+							puzzle[pos] = state[pos][j];
+							solution = solve(puzzle);
+							j++;
+						}
+					}
+					if( solution )
+					{
+						set(state, pos, puzzle[pos]);
+						clues++;
+						lastSolution = solution
+					}
+					else
+					{
+						puzzle[pos] = null
+					}
+				}
+				i++;
+			}
+			return puzzle;
+
+		}
+		return {solve:solve,solveState:solveState,create:create};
 	}
 	exports.problemType = problemType;
 
@@ -193,6 +245,7 @@
 	function getDefaultLength(){
 		return 9*9;
 	}
+	exports.getDefaultLength = getDefaultLength;
 
 	/**
 	 * Returns the default groups of distinct characters.
@@ -205,8 +258,8 @@
 	 *     
 	 *     //Adding diagonals as well
 	 *     var groups = sudoku.getDefaultGroups();
-	 *     groups.push([0,10,20,30,40,50,60,70,80]);
-	 *     groups.push([8,16,24,32,40,48,56,64,72]);
+	 *     groups.add([0,10,20,30,40,50,60,70,80]);
+	 *     groups.add([8,16,24,32,40,48,56,64,72]);
 	 *     var solver = sodoku.problemType(null, null, groups);
 	 *
 	 * @return {array} an array of arrays of cell indexes.
@@ -323,4 +376,16 @@
 			return Array.isArray;
 		}
 	}());
-}(typeof exports === 'undefined'?window.sudoku={}:exports));
+
+	function shuffleArray(obj) {
+		var set = obj && obj.length === +obj.length ? obj : _.values(obj);
+		var length = set.length;
+		var shuffled = Array(length);
+		for (var index = 0, rand; index < length; index++) {
+			rand = Math.floor(Math.random() * (index + 1));
+			if (rand !== index) shuffled[index] = shuffled[rand];
+			shuffled[rand] = set[index];
+		}
+		return shuffled;
+	}
+}(typeof exports === 'undefined'?this['sudoku']={}:exports));
